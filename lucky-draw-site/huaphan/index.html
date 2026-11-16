@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>สุ่มรางวัล · Huaphan</title>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#1a0f3a;--bg2:#2d1458;--card:#ffffff14;--line:#ffffff30;--tx:#fff7e8;--mute:#cdbfee;--hot:#ff5d73;--gold:#ffd23f;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font-family:'Kanit','Noto Sans Thai',system-ui,sans-serif;color:var(--tx);
+background:radial-gradient(circle at 15% 10%,#ff5d7340,transparent 40%),radial-gradient(circle at 85% 20%,#3a86ff40,transparent 40%),radial-gradient(circle at 50% 100%,#2ec4b640,transparent 45%),linear-gradient(160deg,var(--bg),var(--bg2));background-attachment:fixed}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
+.wrap{max-width:980px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:clamp(2rem,7vw,3.4rem);font-weight:800;margin:6px 0 2px;text-align:center;letter-spacing:.5px;
+background:linear-gradient(90deg,#ff5d73,#ffd23f,#2ec4b6,#3a86ff,#ff6bd6);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{text-align:center;color:var(--mute);margin:0 0 18px}
+.grid{display:grid;grid-template-columns:1fr;gap:18px}
+@media(min-width:820px){.grid{grid-template-columns:1.05fr 1fr;align-items:start}}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px;backdrop-filter:blur(6px)}
+.stage{text-align:center}
+.wheelbox{position:relative;width:min(88vw,380px);aspect-ratio:1;margin:8px auto 14px}
+.rim{position:absolute;inset:-10px;border-radius:50%;background:conic-gradient(#ffd23f,#ff5d73,#ff6bd6,#3a86ff,#2ec4b6,#ffd23f);box-shadow:0 0 40px #ffd23f55}
+#wheel{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;transition:transform 5s cubic-bezier(.12,.7,.1,1)}
+.pin{position:absolute;left:50%;top:-18px;width:0;height:0;transform:translateX(-50%);z-index:3;
+border-left:16px solid transparent;border-right:16px solid transparent;border-top:34px solid #fff;filter:drop-shadow(0 3px 4px #0008)}
+.hub{position:absolute;left:50%;top:50%;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:50%;background:radial-gradient(#fff,#ffd23f);border:4px solid #fff;z-index:2;display:grid;place-items:center;font-size:26px;box-shadow:0 4px 14px #0007}
+button{font:inherit;cursor:pointer;border:0;border-radius:999px;color:#1b1033;font-weight:600}
+button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.spin{font-size:1.5rem;font-weight:800;padding:14px 44px;background:linear-gradient(90deg,#ffd23f,#ff9f1c,#ff5d73);box-shadow:0 8px 24px #ff5d7360;transition:transform .15s}
+.spin:active{transform:scale(.96)}
+.spin:disabled{filter:grayscale(.8) brightness(.7);cursor:not-allowed}
+.left{margin-top:10px;color:var(--mute)}
+.left b{color:var(--gold);font-size:1.2rem}
+h2{margin:0 0 10px;font-size:1.2rem}
+.row{display:grid;grid-template-columns:14px 1fr 86px;gap:8px;align-items:center;margin-bottom:8px}
+.dot{width:14px;height:34px;border-radius:7px}
+input{font:inherit;width:100%;padding:8px 10px;border-radius:12px;border:1px solid var(--line);background:#0000003a;color:var(--tx);min-width:0}
+input[type=number]{text-align:center}
+.row.empty input{opacity:.5}
+.tools{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.tools button{padding:9px 16px;background:linear-gradient(90deg,#2ec4b6,#3a86ff);color:#fff}
+.tools .warn{background:linear-gradient(90deg,#ff5d73,#ff6bd6)}
+.hist{margin-top:14px;max-height:170px;overflow:auto;font-size:.95rem;color:var(--mute)}
+.hist div{padding:4px 0;border-bottom:1px dashed var(--line)}
+.hint{font-size:.85rem;color:var(--mute);margin:8px 0 0}
+#modal{position:fixed;inset:0;background:#0009;display:none;place-items:center;z-index:20;padding:20px}
+#modal.on{display:grid}
+.pop{background:linear-gradient(160deg,#ff6bd6,#8e5cff 55%,#3a86ff);border:4px solid #fff;border-radius:28px;padding:28px 34px;text-align:center;max-width:420px;box-shadow:0 0 60px #ffd23f88;animation:pop .5s cubic-bezier(.2,1.6,.4,1)}
+.pop .big{font-size:3.4rem}
+.pop h3{margin:4px 0 6px;font-size:1.9rem;font-weight:800;word-break:break-word}
+.pop button{margin-top:14px;padding:10px 30px;background:var(--gold)}
+@keyframes pop{from{transform:scale(.3);opacity:0}}
+.cf{position:fixed;top:-20px;width:10px;height:16px;z-index:30;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+@media(prefers-reduced-motion:reduce){#wheel{transition-duration:.01s}.cf,.pop{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🎉 สุ่มรางวัล · Huaphan 🎉</h1>
+  <p class="sub">หมุนวงล้อ รางวัลที่หมดสต๊อกจะไม่ถูกสุ่ม</p>
+  <div class="grid">
+    <section class="panel stage">
+      <div class="wheelbox">
+        <div class="rim"></div><div class="pin"></div>
+        <canvas id="wheel" width="760" height="760"></canvas>
+        <div class="hub">⭐</div>
+      </div>
+      <button class="spin" id="spin">หมุนเลย!</button>
+      <div class="left">สต๊อกคงเหลือทั้งหมด <b id="total">0</b> ชิ้น</div>
+    </section>
+    <section class="panel">
+      <h2>🎁 ตั้งค่ารางวัล</h2>
+      <div id="list"></div>
+      <p class="hint">แก้ชื่อหรือจำนวนสต๊อกได้ทันที ระบบบันทึกอัตโนมัติ รีเฟรชแล้วข้อมูลไม่หาย (บันทึกในเบราว์เซอร์เครื่องนี้) · รางวัลที่มีสต๊อกมากมีโอกาสถูกสุ่มมากกว่า</p>
+      <p class="hint" id="st"></p>
+      <div class="tools">
+        <button id="xcsv">ส่งออก CSV</button>
+        <button id="xjson">ส่งออก JSON</button>
+        <button id="xhist">ส่งออกประวัติ</button>
+        <button id="impbtn" onclick="document.getElementById('imp').click()">นำเข้า JSON</button><input type="file" id="imp" accept=".json,application/json" hidden>
+        <button id="reset" class="warn">รีเซ็ตทั้งหมด</button>
+      </div>
+      <div class="hist" id="hist"></div>
+    </section>
+  </div>
+</div>
+<div id="modal"><div class="pop"><div class="big">🏆</div><div>ยินดีด้วย! คุณได้รับ</div><h3 id="win"></h3><button id="ok">ตกลง</button></div></div>
+<script>
+const KEY='luckydraw-v1-o5',COLORS=['#ff5d73','#ff9f1c','#ffd23f','#2ec4b6','#3a86ff','#8e5cff','#ff6bd6'];
+const DEF=()=>({prizes:[['รางวัลที่ 1',1],['รางวัลที่ 2',2],['รางวัลที่ 3',3],['รางวัลที่ 4',5],['รางวัลที่ 5',8],['รางวัลที่ 6',10],['รางวัลปลอบใจ',20]].map(([name,stock])=>({name,stock})),history:[],rot:0});
+let S,MODE='',DB=null,canEdit=true,ready=true,latest=null,cfgRef,stockRef,pt=0;const HID=Math.random().toString(36).slice(2);
+function load(){
+  try{const v=localStorage.getItem(KEY);if(v)return JSON.parse(v)}catch(e){}
+  try{const v=sessionStorage.getItem(KEY);if(v)return JSON.parse(v)}catch(e){}
+  try{if(window.name&&window.name.indexOf(KEY+':')===0)return JSON.parse(window.name.slice(KEY.length+1))}catch(e){}
+  return null;
+}
+S=load();
+if(!S||!Array.isArray(S.prizes)||S.prizes.length!==7)S=DEF();
+S.history=S.history||[];S.rot=S.rot||0;
+function status(msg){const e=document.getElementById('st');if(!e)return;e.textContent=msg||(DB?(canEdit?'✅ เชื่อมฐานข้อมูลกลางแล้ว ทุกคนเห็นสต๊อกเดียวกัน':'✅ เชื่อมฐานข้อมูลกลางแล้ว (ผู้จัดเท่านั้นที่แก้รางวัลได้)'):MODE==='local'?'✅ บันทึกข้อมูลในเบราว์เซอร์แล้ว':MODE?'⚠️ บันทึกได้เฉพาะแท็บนี้ ปิดแท็บแล้วข้อมูลอาจหาย ควรส่งออก JSON เก็บไว้':'⚠️ เบราว์เซอร์บล็อกการบันทึก รีเฟรชแล้วข้อมูลจะรีเซ็ต กรุณาส่งออก JSON เก็บไว้ แล้วนำเข้าใหม่ทุกครั้ง')}
+const save=()=>{const j=JSON.stringify(S);let ok='';
+  try{localStorage.setItem(KEY,j);ok='local'}catch(e){}
+  try{sessionStorage.setItem(KEY,j);ok=ok||'session'}catch(e){}
+  try{window.name=KEY+':'+j;ok=ok||'tab'}catch(e){}
+  MODE=ok;status();pushDb()};
+const $=id=>document.getElementById(id);
+const cv=$('wheel'),ctx=cv.getContext('2d');
+let spinning=false;
+
+function drawWheel(){
+  const W=cv.width,c=W/2,n=7,a=2*Math.PI/n;
+  ctx.clearRect(0,0,W,W);
+  S.prizes.forEach((p,i)=>{
+    const s=-Math.PI/2-a/2+i*a;
+    ctx.beginPath();ctx.moveTo(c,c);ctx.arc(c,c,c-4,s,s+a);ctx.closePath();
+    ctx.fillStyle=p.stock>0?COLORS[i]:'#5b5470';ctx.fill();
+    ctx.strokeStyle='#fff';ctx.lineWidth=4;ctx.stroke();
+    ctx.save();ctx.translate(c,c);ctx.rotate(s+a/2);
+    ctx.textAlign='right';ctx.textBaseline='middle';
+    ctx.fillStyle=p.stock>0?'#1b1033':'#b8b0cc';
+    ctx.font='700 38px Kanit, sans-serif';
+    let t=p.name||'-';
+    while(ctx.measureText(t).width>c-130&&t.length>1)t=t.slice(0,-1);
+    if(t!==(p.name||'-'))t+='…';
+    ctx.fillText(t,c-30,0);
+    ctx.restore();
+  });
+}
+function render(){
+  const total=S.prizes.reduce((s,p)=>s+p.stock,0);
+  $('total').textContent=total;
+  $('spin').disabled=spinning||total<=0||!ready;
+  $('spin').textContent=total<=0?'ของรางวัลหมดแล้ว':'หมุนเลย!';
+  $('hist').innerHTML=S.history.length?S.history.slice().reverse().slice(0,30).map(h=>`<div>${esc(h.time)} · ${esc(h.name)}</div>`).join(''):'';
+  drawWheel();
+}
+function esc(s){return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
+function buildList(){
+  $('list').innerHTML='';
+  S.prizes.forEach((p,i)=>{
+    const r=document.createElement('div');r.className='row'+(p.stock<=0?' empty':'');
+    r.innerHTML=`<span class="dot" style="background:${COLORS[i]}"></span><input type="text" maxlength="40" aria-label="ชื่อรางวัล ${i+1}"><input type="number" min="0" step="1" aria-label="สต๊อก ${i+1}">`;
+    const [n,k]=r.querySelectorAll('input');n.value=p.name;k.value=p.stock;n.readOnly=k.readOnly=!canEdit;
+    n.oninput=()=>{p.name=n.value;save();drawWheel()};
+    k.oninput=()=>{p.stock=Math.max(0,Math.floor(+k.value)||0);r.classList.toggle('empty',p.stock<=0);save();render()};
+    k.onblur=()=>{k.value=p.stock};
+    $('list').appendChild(r);
+  });
+}
+async function pushNow(){try{await cfgRef.set({names:S.prizes.map(p=>p.name)});await stockRef.set({stock:S.prizes.map(p=>p.stock),history:S.history.slice(-200)})}catch(e){status('❌ บันทึกลงฐานข้อมูลไม่สำเร็จ ('+((e&&e.code)||'error')+')')}}
+function pushDb(){if(!DB||!canEdit)return;clearTimeout(pt);pt=setTimeout(async()=>{await pushNow();pt=0},500)}
+function apply(){
+  if(!latest||pt)return;const {c,s}=latest;
+  S.prizes.forEach((p,i)=>{if(c.names&&c.names[i]!=null)p.name=c.names[i];p.stock=Math.max(0,Math.floor(+(s.stock&&s.stock[i]))||0)});
+  S.history=s.history||[];
+  const f=document.activeElement;if(f&&f.tagName==='INPUT')render();else{buildList();render()}
+}
+function animate(idx,rec){
+  const a=360/7,jitter=(Math.random()-.5)*a*.7,cur=((S.rot%360)+360)%360,target=(360-idx*a+jitter+360)%360;
+  S.rot+=360*6+((target-cur)+360)%360;
+  try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+  cv.style.transform=`rotate(${S.rot}deg)`;
+  setTimeout(()=>{spinning=false;$('win').textContent=rec.name;$('modal').classList.add('on');confetti();apply();buildList();render()},5100);
+}
+async function spin(){
+  if(spinning)return;
+  if(!DB)return spinLocal();
+  if(!ready)return;
+  spinning=true;render();
+  try{
+    let l,t=0;
+    do{l=await stockRef.acquire({holder:HID,ttlMs:3000});if(!l.acquired)await new Promise(r=>setTimeout(r,700))}while(!l.acquired&&++t<8);
+    if(!l.acquired)throw 0;
+    const d=(await stockRef.get()).data()||{},stock=(d.stock||[]).map(x=>Math.max(0,+x||0));
+    const total=stock.reduce((x,y)=>x+y,0);
+    if(total<=0){spinning=false;apply();render();return}
+    let r=Math.random()*total,idx=0;for(;idx<7;idx++){r-=stock[idx];if(r<0)break}
+    stock[idx]-=1;
+    const rec={time:new Date().toLocaleString('th-TH'),name:S.prizes[idx].name};
+    await stockRef.update({stock,history:(d.history||[]).concat(rec).slice(-200)});
+    animate(idx,rec);
+  }catch(e){spinning=false;status('❌ ตัดสต๊อกไม่สำเร็จ ลองหมุนใหม่อีกครั้ง');render()}
+}
+function spinLocal(){
+  if(spinning)return;
+  const total=S.prizes.reduce((s,p)=>s+p.stock,0);if(total<=0)return;
+  let r=Math.random()*total,idx=0;
+  for(;idx<7;idx++){r-=S.prizes[idx].stock;if(r<0)break}
+  const a=360/7,jitter=(Math.random()-.5)*a*.7;
+  const cur=((S.rot%360)+360)%360,target=(360-idx*a+jitter+360)%360;
+  S.rot+=360*6+((target-cur)+360)%360;
+  const p=S.prizes[idx];p.stock-=1;
+  const rec={time:new Date().toLocaleString('th-TH'),name:p.name};S.history.push(rec);
+  save();spinning=true;
+  cv.style.transform=`rotate(${S.rot}deg)`;
+  $('spin').disabled=true;
+  setTimeout(()=>{spinning=false;$('win').textContent=rec.name;$('modal').classList.add('on');confetti();buildList();render()},5100);
+}
+function confetti(){
+  for(let i=0;i<70;i++){
+    const d=document.createElement('i');d.className='cf';
+    d.style.left=Math.random()*100+'vw';d.style.background=COLORS[i%7];
+    d.style.animationDuration=(2+Math.random()*2.5)+'s';d.style.animationDelay=Math.random()*.6+'s';
+    d.style.borderRadius=i%2?'50%':'2px';
+    document.body.appendChild(d);setTimeout(()=>d.remove(),5500);
+  }
+}
+function dl(name,text,type){
+  const b=new Blob([text],{type}),u=URL.createObjectURL(b),a=document.createElement('a');
+  a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);
+}
+const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
+$('xcsv').onclick=()=>dl('prizes.csv','\ufeffลำดับ,ชื่อรางวัล,สต๊อกคงเหลือ\n'+S.prizes.map((p,i)=>`${i+1},${q(p.name)},${p.stock}`).join('\n'),'text/csv;charset=utf-8');
+$('xjson').onclick=()=>dl('prizes.json',JSON.stringify({prizes:S.prizes,history:S.history},null,2),'application/json');
+$('xhist').onclick=()=>dl('history.csv','\ufeffเวลา,รางวัลที่ได้\n'+S.history.map(h=>`${q(h.time)},${q(h.name)}`).join('\n'),'text/csv;charset=utf-8');
+$('imp').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.prizes)||d.prizes.length!==7)throw 0;
+    S.prizes=d.prizes.map(p=>({name:String(p.name||''),stock:Math.max(0,Math.floor(+p.stock)||0)}));
+    S.history=Array.isArray(d.history)?d.history:[];save();buildList();render();status('✅ นำเข้าข้อมูลแล้ว')}
+  catch(x){status('❌ ไฟล์ JSON ไม่ถูกต้อง (ต้องมีรางวัล 7 รายการ)')}};
+  r.readAsText(f);e.target.value=''};
+let armed=0;
+$('reset').onclick=e=>{
+  if(!armed){e.target.textContent='กดอีกครั้งเพื่อยืนยัน';armed=setTimeout(()=>{armed=0;e.target.textContent='รีเซ็ตทั้งหมด'},3000);return}
+  clearTimeout(armed);armed=0;e.target.textContent='รีเซ็ตทั้งหมด';
+  S=DEF();save();cv.style.transition='none';cv.style.transform='rotate(0deg)';void cv.offsetWidth;cv.style.transition='';buildList();render();
+};
+$('spin').onclick=spin;
+$('ok').onclick=()=>$('modal').classList.remove('on');
+cv.style.transition='none';cv.style.transform=`rotate(${S.rot}deg)`;void cv.offsetWidth;cv.style.transition='';
+buildList();render();save();
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(drawWheel);
+(async()=>{
+  try{
+    if(!window.claude||!claude.use)return;
+    const [db,user]=await Promise.all([claude.use('db'),claude.use('user')]);
+    if(!db)return;
+    canEdit=!!user&&((await user.canEdit())===true||(await user.isOwner())===true);
+    const canSpin=!user||(await user.can('data.write'))!==false;
+    DB=db;ready=false;
+    cfgRef=db.doc('lucky/config');stockRef=db.doc('lucky/stock');
+    $('reset').style.display=$('impbtn').style.display=canEdit?'':'none';
+    let c,s,seeded=false;
+    const er=()=>{DB=null;canEdit=true;ready=true;$('reset').style.display=$('impbtn').style.display='';buildList();render();status('⚠️ เชื่อมฐานข้อมูลกลางไม่ได้ ใช้การบันทึกในเครื่องแทน')};
+    const upd=()=>{
+      if(c===undefined||s===undefined)return;
+      if(!c||!s){
+        if(canEdit){if(!seeded){seeded=true;pushNow()}}
+        else{ready=false;status('⏳ ผู้จัดยังไม่ได้ตั้งค่ารางวัล');render()}
+        return;
+      }
+      ready=canSpin;latest={c,s};status();
+      if(!canSpin)status('👀 โหมดดูอย่างเดียว ไม่มีสิทธิ์หมุน');
+      if(!spinning)apply();
+    };
+    cfgRef.onSnapshot(x=>{c=x.exists?x.data():null;upd()},er);
+    stockRef.onSnapshot(x=>{s=x.exists?x.data():null;upd()},er);
+    buildList();render();status();
+  }catch(e){}
+})();
+</script>
+</body>
+</html>
