@@ -75,7 +75,7 @@ input[type=number]{text-align:center}
     <section class="panel">
       <h2>🎁 ตั้งค่ารางวัล</h2>
       <div id="list"></div>
-      <p class="hint">แก้ชื่อหรือจำนวนสต๊อกได้ทันที ระบบบันทึกอัตโนมัติ รีเฟรชแล้วข้อมูลไม่หาย (บันทึกในเบราว์เซอร์เครื่องนี้) · รางวัลที่มีสต๊อกมากมีโอกาสถูกสุ่มมากกว่า</p>
+      <p class="hint">แก้ชื่อหรือจำนวนสต๊อกได้ทันที ระบบบันทึกอัตโนมัติ รีเฟรชแล้วข้อมูลไม่หาย (เก็บในฐานข้อมูลกลาง ทุกเครื่องเห็นเหมือนกัน) · รางวัลที่มีสต๊อกมากมีโอกาสถูกสุ่มมากกว่า</p>
       <p class="hint" id="st"></p>
       <div class="tools">
         <button id="xcsv">ส่งออก CSV</button>
@@ -89,10 +89,13 @@ input[type=number]{text-align:center}
   </div>
 </div>
 <div id="modal"><div class="pop"><div class="big">🏆</div><div>ยินดีด้วย! คุณได้รับ</div><h3 id="win"></h3><button id="ok">ตกลง</button></div></div>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
+const OFFICE='xaiyabury';
 const KEY='luckydraw-v1-o3',COLORS=['#ff5d73','#ff9f1c','#ffd23f','#2ec4b6','#3a86ff','#8e5cff','#ff6bd6'];
 const DEF=()=>({prizes:[['รางวัลที่ 1',1],['รางวัลที่ 2',2],['รางวัลที่ 3',3],['รางวัลที่ 4',5],['รางวัลที่ 5',8],['รางวัลที่ 6',10],['รางวัลปลอบใจ',20]].map(([name,stock])=>({name,stock})),history:[],rot:0});
-let S,MODE='',DB=null,canEdit=true,ready=true,latest=null,cfgRef,stockRef,pt=0;const HID=Math.random().toString(36).slice(2);
+let S,MODE='',DB=null,canEdit=true,ready=true,latest=null,ref=null,online=false,FB=false,pt=0;const HID=Math.random().toString(36).slice(2);
 function load(){
   try{const v=localStorage.getItem(KEY);if(v)return JSON.parse(v)}catch(e){}
   try{const v=sessionStorage.getItem(KEY);if(v)return JSON.parse(v)}catch(e){}
@@ -102,7 +105,7 @@ function load(){
 S=load();
 if(!S||!Array.isArray(S.prizes)||S.prizes.length!==7)S=DEF();
 S.history=S.history||[];S.rot=S.rot||0;
-function status(msg){const e=document.getElementById('st');if(!e)return;e.textContent=msg||(DB?(canEdit?'✅ เชื่อมฐานข้อมูลกลางแล้ว ทุกคนเห็นสต๊อกเดียวกัน':'✅ เชื่อมฐานข้อมูลกลางแล้ว (ผู้จัดเท่านั้นที่แก้รางวัลได้)'):MODE==='local'?'✅ บันทึกข้อมูลในเบราว์เซอร์แล้ว':MODE?'⚠️ บันทึกได้เฉพาะแท็บนี้ ปิดแท็บแล้วข้อมูลอาจหาย ควรส่งออก JSON เก็บไว้':'⚠️ เบราว์เซอร์บล็อกการบันทึก รีเฟรชแล้วข้อมูลจะรีเซ็ต กรุณาส่งออก JSON เก็บไว้ แล้วนำเข้าใหม่ทุกครั้ง')}
+function status(msg){const e=document.getElementById('st');if(!e)return;e.textContent=msg||(DB?(online?'✅ เชื่อมฐานข้อมูลกลางแล้ว ทุกเครื่องเห็นสต๊อกเดียวกัน':'⏳ กำลังเชื่อมต่อฐานข้อมูลกลาง...'):FB?'⚠️ เชื่อมฐานข้อมูลกลางไม่ได้ ใช้ข้อมูลในเครื่องนี้ชั่วคราว (สต๊อกจะไม่ตรงกับเครื่องอื่น)':MODE==='local'?'✅ บันทึกข้อมูลในเบราว์เซอร์แล้ว':MODE?'⚠️ บันทึกได้เฉพาะแท็บนี้':'⚠️ เบราว์เซอร์บล็อกการบันทึก')}
 const save=()=>{const j=JSON.stringify(S);let ok='';
   try{localStorage.setItem(KEY,j);ok='local'}catch(e){}
   try{sessionStorage.setItem(KEY,j);ok=ok||'session'}catch(e){}
@@ -152,12 +155,13 @@ function buildList(){
     $('list').appendChild(r);
   });
 }
-async function pushNow(){try{await cfgRef.set({names:S.prizes.map(p=>p.name)});await stockRef.set({stock:S.prizes.map(p=>p.stock),history:S.history.slice(-200)})}catch(e){status('❌ บันทึกลงฐานข้อมูลไม่สำเร็จ ('+((e&&e.code)||'error')+')')}}
+const A=x=>Array.isArray(x)?x:Object.values(x||{});
+function pushNow(){if(!ref)return Promise.resolve();return ref.set({names:S.prizes.map(p=>p.name||''),stock:S.prizes.map(p=>p.stock),history:S.history.slice(-200)}).catch(e=>status('❌ บันทึกลงฐานข้อมูลไม่สำเร็จ ('+((e&&e.code)||'error')+')'))}
 function pushDb(){if(!DB||!canEdit)return;clearTimeout(pt);pt=setTimeout(async()=>{await pushNow();pt=0},500)}
 function apply(){
-  if(!latest||pt)return;const {c,s}=latest;
-  S.prizes.forEach((p,i)=>{if(c.names&&c.names[i]!=null)p.name=c.names[i];p.stock=Math.max(0,Math.floor(+(s.stock&&s.stock[i]))||0)});
-  S.history=s.history||[];
+  if(!latest||pt)return;const v=latest,nm=A(v.names),st=A(v.stock);
+  S.prizes.forEach((p,i)=>{if(nm[i]!=null)p.name=String(nm[i]);p.stock=Math.max(0,Math.floor(+st[i])||0)});
+  S.history=A(v.history);
   const f=document.activeElement;if(f&&f.tagName==='INPUT')render();else{buildList();render()}
 }
 function animate(idx,rec){
@@ -170,19 +174,22 @@ function animate(idx,rec){
 async function spin(){
   if(spinning)return;
   if(!DB)return spinLocal();
-  if(!ready)return;
+  if(!ready||!online){status('❌ ยังไม่ได้เชื่อมต่อฐานข้อมูล ลองใหม่อีกครั้ง');return}
   spinning=true;render();
+  let idx=-1,rec=null;
   try{
-    let l,t=0;
-    do{l=await stockRef.acquire({holder:HID,ttlMs:3000});if(!l.acquired)await new Promise(r=>setTimeout(r,700))}while(!l.acquired&&++t<8);
-    if(!l.acquired)throw 0;
-    const d=(await stockRef.get()).data()||{},stock=(d.stock||[]).map(x=>Math.max(0,+x||0));
-    const total=stock.reduce((x,y)=>x+y,0);
-    if(total<=0){spinning=false;apply();render();return}
-    let r=Math.random()*total,idx=0;for(;idx<7;idx++){r-=stock[idx];if(r<0)break}
-    stock[idx]-=1;
-    const rec={time:new Date().toLocaleString('th-TH'),name:S.prizes[idx].name};
-    await stockRef.update({stock,history:(d.history||[]).concat(rec).slice(-200)});
+    const res=await ref.transaction(cur=>{
+      idx=-1;
+      if(!cur)return cur;
+      const stock=A(cur.stock).map(x=>Math.max(0,+x||0)),names=A(cur.names);
+      const total=stock.reduce((x,y)=>x+y,0);
+      if(total<=0)return;
+      let r=Math.random()*total,i=0;for(;i<stock.length-1;i++){r-=stock[i];if(r<0)break}
+      stock[i]-=1;idx=i;
+      rec={time:new Date().toLocaleString('th-TH'),name:String(names[i]!=null?names[i]:S.prizes[i].name)};
+      return {names:names,stock:stock,history:A(cur.history).concat(rec).slice(-200)};
+    },undefined,false);
+    if(!res.committed||idx<0){spinning=false;apply();render();return}
     animate(idx,rec);
   }catch(e){spinning=false;status('❌ ตัดสต๊อกไม่สำเร็จ ลองหมุนใหม่อีกครั้ง');render()}
 }
@@ -235,33 +242,24 @@ $('ok').onclick=()=>$('modal').classList.remove('on');
 cv.style.transition='none';cv.style.transform=`rotate(${S.rot}deg)`;void cv.offsetWidth;cv.style.transition='';
 buildList();render();save();
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(drawWheel);
-(async()=>{
+(function(){
+  let seeded=false,boot=0;
+  const er=()=>{clearTimeout(boot);DB=null;ref=null;FB=true;canEdit=true;ready=true;online=false;buildList();render();status()};
   try{
-    if(!window.claude||!claude.use)return;
-    const [db,user]=await Promise.all([claude.use('db'),claude.use('user')]);
-    if(!db)return;
-    canEdit=!!user&&((await user.canEdit())===true||(await user.isOwner())===true);
-    const canSpin=!user||(await user.can('data.write'))!==false;
-    DB=db;ready=false;
-    cfgRef=db.doc('lucky/config');stockRef=db.doc('lucky/stock');
-    $('reset').style.display=$('impbtn').style.display=canEdit?'':'none';
-    let c,s,seeded=false;
-    const er=()=>{DB=null;canEdit=true;ready=true;$('reset').style.display=$('impbtn').style.display='';buildList();render();status('⚠️ เชื่อมฐานข้อมูลกลางไม่ได้ ใช้การบันทึกในเครื่องแทน')};
-    const upd=()=>{
-      if(c===undefined||s===undefined)return;
-      if(!c||!s){
-        if(canEdit){if(!seeded){seeded=true;pushNow()}}
-        else{ready=false;status('⏳ ผู้จัดยังไม่ได้ตั้งค่ารางวัล');render()}
-        return;
-      }
-      ready=canSpin;latest={c,s};status();
-      if(!canSpin)status('👀 โหมดดูอย่างเดียว ไม่มีสิทธิ์หมุน');
+    if(!window.firebase)throw 0;
+    firebase.initializeApp({databaseURL:'https://lucky-draw-bf4af-default-rtdb.asia-southeast1.firebasedatabase.app'});
+    const db=firebase.database();
+    ref=db.ref('lucky/'+OFFICE);DB=db;ready=false;
+    db.ref('.info/connected').on('value',s=>{online=s.val()===true;status()});
+    ref.on('value',snap=>{
+      clearTimeout(boot);const v=snap.val();
+      if(!v||!v.stock){if(!seeded){seeded=true;pushNow()}ready=true;render();status();return}
+      latest=v;ready=true;status();
       if(!spinning)apply();
-    };
-    cfgRef.onSnapshot(x=>{c=x.exists?x.data():null;upd()},er);
-    stockRef.onSnapshot(x=>{s=x.exists?x.data():null;upd()},er);
+    },er);
+    boot=setTimeout(()=>{if(!ready)er()},10000);
     buildList();render();status();
-  }catch(e){}
+  }catch(e){er()}
 })();
 </script>
 </body>
